@@ -245,7 +245,7 @@ useEffect(() => {
 
         <div className="relative overflow-hidden rounded-[1rem]">
           <Image
-            src="/images/hero-2.jpg"
+            src="/images/hero1-new.jpg"
             alt="Everything High featured model"
             width={900}
             height={1100}
@@ -290,7 +290,7 @@ useEffect(() => {
       <div className="relative overflow-hidden rounded-[0.6rem] bg-[#f8f5f2] shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition duration-500 hover:-translate-y-2">
         
         <Image
-          src="/images/hero1-new.jpg"
+          src="/images/models1.jpg"
           alt="About Everything High"
           width={900}
           height={1200}
