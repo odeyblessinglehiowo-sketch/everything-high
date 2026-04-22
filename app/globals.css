@@ -1,20 +1,6 @@
+/* ===== FONTS ===== */
 @import "tailwindcss";
-@keyframes marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-marquee {
-  animation: marquee 40s linear infinite;
-}
-.animate-marquee:hover {
-  animation-play-state: paused;
-}
-
+/* ===== ROOT COLORS ===== */
 :root {
   --background: #120a06;
   --foreground: #f8f4ef;
@@ -22,29 +8,133 @@
   --primary: #4b2e1f;
   --primary-2: #6b442b;
   --primary-3: #8a5a3b;
-  --primary-4: #b08968;
+  --primary-4: #c89b75;
 
   --accent: #ffffff;
-  --accent-dark: #111111;
   --muted: #e7d8cc;
-  --border: rgba(255, 255, 255, 0.12);
+  --border: rgba(255, 255, 255, 0.1);
 }
 
+/* ===== BASE ===== */
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background: radial-gradient(circle at top, #2a170f 0%, #120a06 55%, #0b0503 100%);
+  background: #120a06; /* cleaner, more luxury */
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.01em;
 }
 
+/* ===== TYPOGRAPHY ===== */
+.heading-font {
+  font-family: var(--font-playfair);
+}
+
+body {
+  font-family: var(--font-inter);
+}
+
+/* ===== LINKS ===== */
 a {
   text-decoration: none;
   color: inherit;
 }
 
+/* ===== BOX MODEL ===== */
 * {
   box-sizing: border-box;
 }
+
+/* ===== HERO ANIMATIONS ===== */
+
+/* Slow zoom */
+@keyframes heroZoom {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-heroZoom {
+  animation: heroZoom 24s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Glow breathing */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.75; }
+}
+
+.animate-glowPulse {
+  animation: glowPulse 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Text shimmer */
+@keyframes textGlow {
+  0%, 100% {
+    opacity: 1.08;
+    text-shadow: 0 0 0px rgba(200,155,117,0);
+  }
+  50% {
+    opacity: 0.5;
+    text-shadow: 0 0 40px rgba(200,155,117,0.35);
+  }
+}
+.animate-textGlow {
+  animation: textGlow 5s ease-in-out infinite;
+}
+
+/* ===== MARQUEE (KEEP) ===== */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+@keyframes floatUpDown {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-float {
+  animation: floatUpDown 6s ease-in-out infinite;
+}
+/* RUNWAY FLOW (LEFT → RIGHT LOOP) */
+@keyframes runwayMove {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ZIG-ZAG LEAP */
+@keyframes zigzagLeap {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-18px);
+  }
+}
+
+/* APPLY TO TRACK */
+.animate-runway {
+  animation: runwayMove 25s linear infinite;
+}
+
+/* EACH CARD OFFSET */
+.zigzag-0 { animation: zigzagLeap 2s ease-in-out infinite; }
+.zigzag-1 { animation: zigzagLeap 2s ease-in-out infinite 0.4s; }
+.zigzag-2 { animation: zigzagLeap 2s ease-in-out infinite 0.8s; }
+.zigzag-3 { animation: zigzagLeap 2s ease-in-out infinite 1.2s; }
+.zigzag-4 { animation: zigzagLeap 2s ease-in-out infinite 1.6s; }
+.zigzag-5 { animation: zigzagLeap 2s ease-in-out infinite 2s; }
