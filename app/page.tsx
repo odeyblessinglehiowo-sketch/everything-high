@@ -867,7 +867,7 @@ useEffect(() => {
 </section>
 
 <section className="border-t border-[#eadfd6] bg-white">
-  <div className="mx-auto max-w-7xl px-5 py-10 md:px-6 md:py-12 lg:px-10 lg:py-5">
+  <div className="mx-auto max-w-7xl px-5 py-5 md:px-6 md:py-12 lg:px-10 lg:py-2">
 
     {/* HEADER */}
     <div className="max-w-xl space-y-3">
@@ -1074,19 +1074,19 @@ useEffect(() => {
      <section className="bg-white overflow-hidden">
 
   {/* HEADER */}
-  <div className="px-5 pt-12 pb-8 md:px-6 md:pt-20 md:pb-12 text-center">
-    <p className="text-[10px] md:text-[11px] uppercase tracking-[0.45em] md:tracking-[0.5em] text-[#b08968]">
+  <div className="px-5 pt-10 pb-6 md:px-6 md:pt-14 md:pb-8 text-center">
+    <p className="text-[10px] uppercase tracking-[0.45em] text-[#b08968]">
       Visit Us
     </p>
 
-    <h2 className="heading-font text-[2rem] leading-[1.15] md:text-[2.4rem] lg:text-[2.8rem] text-[#1a0f0a]">
+    <h2 className="heading-font text-[1.9rem] leading-[1.15] md:text-[2.4rem] text-[#1a0f0a]">
       Find Everything
       <span className="block italic text-[#c89b75]">
         High
       </span>
     </h2>
 
-    <p className="mt-2 md:mt-3 text-[13px] md:text-sm text-[#6b5a50] md:text-base">
+    <p className="mt-2 text-[13px] text-[#6b5a50]">
       University of Abuja, Abuja, Nigeria
     </p>
   </div>
@@ -1094,72 +1094,69 @@ useEffect(() => {
   {/* MAIN GRID */}
   <div className="grid lg:grid-cols-2">
 
-    {/* LEFT - CONTACT CARD */}
-    <div className="bg-[#efe3d6] px-5 py-10 md:px-14 md:py-16">
+    {/* LEFT */}
+    <div className="bg-[#efe3d6] px-5 py-8 md:px-12 md:py-12">
 
-      <div className="max-w-md space-y-6 md:space-y-8">
+      <div className="max-w-md space-y-5 md:space-y-6">
 
         <div>
-          <p className="text-[10px] md:text-[11px] uppercase tracking-[0.35em] md:tracking-[0.4em] text-[#b08968]">
+          <p className="text-[10px] uppercase tracking-[0.35em] text-[#b08968]">
             Contact Information
           </p>
 
-          <h3 className="heading-font mt-2 md:mt-3 text-[1.6rem] leading-[1.2] md:text-[2rem] text-[#1a0f0a]">
+          <h3 className="heading-font mt-2 text-[1.5rem] leading-[1.2] md:text-[1.9rem] text-[#1a0f0a]">
             Let’s start a meaningful
             <span className="block italic text-[#c89b75]">
               conversation.
             </span>
           </h3>
 
-          <p className="mt-3 md:mt-4 text-[13px] md:text-sm leading-6 md:leading-7 text-[#6b5a50]">
+          <p className="mt-2 text-[13px] leading-6 text-[#6b5a50]">
             We welcome inquiries about training, partnerships, and everything
             related to your modelling journey.
           </p>
         </div>
 
         {/* CONTACT ITEMS */}
-        <div className="space-y-4 md:space-y-5">
+        <div className="space-y-3">
 
-          {/* EMAIL */}
-          <div className="flex items-start gap-3 md:gap-4">
-            <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white text-[#b08968]">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#b08968]">
               ✉
             </div>
             <div>
-              <p className="text-[10px] md:text-[11px] uppercase tracking-[0.25em] md:tracking-[0.3em] text-[#b08968]">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[#b08968]">
                 Email
               </p>
-              <p className="text-[13px] md:text-sm text-[#1a0f0a]">
-                info@everythinghigh.com
+              <p className="text-[13px] text-[#1a0f0a]">
+                Everythingthing03@gmail.com
               </p>
             </div>
           </div>
 
-          {/* PHONE */}
-          <div className="flex items-start gap-3 md:gap-4">
-            <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white text-[#b08968]">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#b08968]">
               ☎
             </div>
             <div>
-              <p className="text-[10px] md:text-[11px] uppercase tracking-[0.25em] md:tracking-[0.3em] text-[#b08968]">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[#b08968]">
                 Phone
               </p>
-              <p className="text-[13px] md:text-sm text-[#1a0f0a]">
+              <p className="text-[13px] text-[#1a0f0a]">
                 +234 812 676 9069
               </p>
             </div>
           </div>
 
-          {/* LOCATION */}
-          <div className="flex items-start gap-3 md:gap-4">
-            <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white text-[#b08968]">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#b08968]">
               📍
             </div>
             <div>
-              <p className="text-[10px] md:text-[11px] uppercase tracking-[0.25em] md:tracking-[0.3em] text-[#b08968]">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[#b08968]">
                 Location
               </p>
-              <p className="text-[13px] md:text-sm text-[#1a0f0a]">
+              <p className="text-[13px] text-[#1a0f0a]">
                 University of Abuja, Nigeria
               </p>
             </div>
@@ -1168,16 +1165,56 @@ useEffect(() => {
         </div>
 
         {/* SOCIALS */}
-        <div className="flex items-center gap-2 md:gap-3 pt-2">
-          {/* keep your icons same, just smaller spacing */}
-          {/* no need to repeat all, just spacing improved */}
+        <div className="flex items-center gap-3 pt-2">
+
+          <a
+            href="https://wa.me/2348126769069"
+            target="_blank"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a0f0a] text-white hover:bg-[#4b2e1f] transition"
+          >
+            <FaWhatsapp />
+          </a>
+
+          <a
+            href="#"
+            target="_blank"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a0f0a] text-white hover:bg-[#4b2e1f] transition"
+          >
+            <FaInstagram />
+          </a>
+
+          <a
+            href="#"
+            target="_blank"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a0f0a] text-white hover:bg-[#4b2e1f] transition"
+          >
+            <FaTiktok />
+          </a>
+
+          <a
+            href="#"
+            target="_blank"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a0f0a] text-white hover:bg-[#4b2e1f] transition"
+          >
+            <FaYoutube />
+          </a>
+
+          <a
+            href="#"
+            target="_blank"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a0f0a] text-white hover:bg-[#4b2e1f] transition"
+          >
+            <FaFacebookF />
+          </a>
+
         </div>
 
       </div>
+
     </div>
 
     {/* RIGHT - MAP */}
-    <div className="h-[260px] md:h-[420px] lg:h-full">
+    <div className="h-[240px] md:h-[360px] lg:h-full">
 
       <iframe
         title="Everything High Location Map"

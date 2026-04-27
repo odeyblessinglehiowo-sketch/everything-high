@@ -91,7 +91,7 @@ export default function SiteFooter() {
 
           <div className="space-y-2 md:space-y-3 text-[13px] md:text-sm leading-6 md:leading-7 text-[#e6d9cf]">
             <p>University of Abuja, Nigeria</p>
-            <p>info@everythinghigh.com</p>
+            <p>Everythingthing03@gmail.com</p>
             <p>+234 812 676 9069</p>
           </div>
 

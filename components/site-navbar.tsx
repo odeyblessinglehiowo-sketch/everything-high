@@ -13,14 +13,26 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
-export default function SiteNavbar() {
+interface SiteNavbarProps {
+  variant?: "dark" | "light";
+}
+
+export default function SiteNavbar({ variant = "dark" }: SiteNavbarProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const isLight = variant === "light";
 
   return (
     <>
       {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#120a06]/85 backdrop-blur-md">
+      <header
+        className={`sticky top-0 z-50 border-b backdrop-blur-md ${
+          isLight
+            ? "border-[#e8ddd4] bg-[#120a06]"
+            : "border-white/10 bg-[#120a06]/85"
+        }`}
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-10">
 
           {/* LOGO */}
@@ -32,7 +44,6 @@ export default function SiteNavbar() {
               height={48}
               className="h-12 w-12 object-contain opacity-80"
             />
-
             <span className="text-sm font-semibold uppercase tracking-[0.35em] text-white">
               Everything High
             </span>
@@ -42,7 +53,6 @@ export default function SiteNavbar() {
           <nav className="hidden items-center gap-8 md:flex">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
-
               return (
                 <Link
                   key={link.href}
@@ -54,8 +64,6 @@ export default function SiteNavbar() {
                   }`}
                 >
                   {link.label}
-
-                  {/* ACTIVE LINE */}
                   <span
                     className={`absolute -bottom-2 left-0 h-[2px] bg-[#c89b75] transition-all duration-300 ${
                       isActive ? "w-full" : "w-0 group-hover:w-full"
@@ -74,12 +82,17 @@ export default function SiteNavbar() {
             Apply Now
           </Link>
 
-          {/* HAMBURGER */}
+          {/* HAMBURGER — same style on all pages */}
           <button
             onClick={() => setOpen(true)}
-            className="md:hidden flex h-11 w-11 items-center justify-center rounded-full border border-white/20"
+            className="md:hidden flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white hover:border-[#c89b75] transition"
+            aria-label="Open menu"
           >
-            ☰
+            <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+              <rect y="0" width="18" height="2" rx="1" fill="currentColor"/>
+              <rect y="6" width="14" height="2" rx="1" fill="currentColor"/>
+              <rect y="12" width="18" height="2" rx="1" fill="currentColor"/>
+            </svg>
           </button>
         </div>
       </header>
@@ -123,12 +136,15 @@ export default function SiteNavbar() {
               <p className="text-[11px] uppercase tracking-[0.4em] text-[#c89b75]">
                 Menu
               </p>
-
               <button
                 onClick={() => setOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white hover:border-[#c89b75] transition"
+                aria-label="Close menu"
               >
-                ✕
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <line x1="1" y1="1" x2="13" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="13" y1="1" x2="1" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
               </button>
             </div>
 
@@ -136,7 +152,6 @@ export default function SiteNavbar() {
             <div className="mt-10 space-y-6">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
-
                 return (
                   <Link
                     key={link.href}
@@ -149,8 +164,6 @@ export default function SiteNavbar() {
                     }`}
                   >
                     {link.label}
-
-                    {/* subtle divider */}
                     <div className="mt-3 h-[1px] w-full bg-white/10" />
                   </Link>
                 );
