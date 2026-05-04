@@ -70,7 +70,7 @@ export default function GalleryPage() {
                   autoPlay
                   muted
                   loop
-                  className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-40"
                 />
 
                 {/* main */}

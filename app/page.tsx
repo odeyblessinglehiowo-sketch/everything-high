@@ -1,11 +1,11 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import SiteNavbar from "@/components/site-navbar";
 import SiteFooter from "@/components/site-footer";
 import StatsSection from "@/components/stats-section";
+
 import {
   FaWhatsapp,
   FaInstagram,
@@ -175,6 +175,7 @@ useEffect(() => {
   );
 
   return (
+    
     <main className="min-h-screen bg-[#120a06] text-white">
       <SiteNavbar />
 

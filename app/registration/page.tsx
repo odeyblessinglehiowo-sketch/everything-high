@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
+import Script from "next/script";
+import { useState, useRef, Suspense } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import SiteNavbar from "@/components/site-navbar";
 import SiteFooter from "@/components/site-footer";
+import { createClient } from "@supabase/supabase-js";
+import { useSearchParams } from "next/navigation";
+
 /* ─── TYPES ──────────────────────────────────────────────────────────────── */
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -40,6 +44,73 @@ interface FormData {
   paymentMethod: string;
 }
 
+/* ─── SUPABASE ───────────────────────────────────────────────────────────── */
+const supabase = createClient(
+  "https://ypukgajdjfrtdwetqetg.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdWtnYWpkamZydGR3ZXRxZXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODgzNDYsImV4cCI6MjA5Mjc2NDM0Nn0.DepyLLBM3XyGwKY2Ouz22fIOCaLHKmTCjKFKGtoo1cA"
+);
+
+const BUCKET = "applicant-uploads";
+
+/**
+ * Uploads a single File to Supabase Storage.
+ * Path: {internalRef}/{slot}.{ext}
+ * Returns the PUBLIC URL of the file so it can be stored directly in DB
+ * and the admin dashboard can display it immediately without extra lookups.
+ */
+async function uploadFile(
+  file: File,
+  internalRef: string,
+  slot: string
+): Promise<string | null> {
+  const ext = file.name.split(".").pop() ?? "bin";
+  const path = `${internalRef}/${slot}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: file.type,
+    });
+
+  if (error) {
+    console.error(`❌ Upload failed for ${slot}:`, error.message);
+    return null;
+  }
+
+  // Return the public URL directly — this is what gets saved to DB
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl ?? null;
+}
+
+/* ─── RESEND EMAIL ───────────────────────────────────────────────────────── */
+// We call a Next.js API route that uses Resend on the server side.
+// Create /app/api/send-registration-emails/route.ts (see below).
+async function sendRegistrationEmails(payload: {
+  applicantName: string;
+  applicantEmail: string;
+  internalRef: string;
+  paymentRef: string;
+  paymentMethod: string;
+  state: string;
+  phone: string;
+  category: string;
+  amount: number;
+}) {
+  try {
+    await fetch("/api/send-registration-emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    // Email failure is non-critical — application is already saved
+    console.error("Email sending failed (non-critical):", err);
+  }
+}
+
+/* ─── HELPERS ────────────────────────────────────────────────────────────── */
 const NIGERIAN_STATES = [
   "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
   "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT – Abuja","Gombe",
@@ -75,7 +146,6 @@ const S = {
     backgroundColor: "#f5f0eb",
     color: "#f5f0eb",
     fontFamily: "'Georgia', serif",
-    
   },
   hero: {
     textAlign: "center" as const,
@@ -491,7 +561,6 @@ function SampleGuideSidebar() {
 
   return (
     <>
-    
       <div style={S.guideCard}>
         <p style={S.guideLabel}>Sample Guide</p>
 
@@ -519,9 +588,7 @@ function SampleGuideSidebar() {
                 position: "absolute", inset: 0,
                 background: "linear-gradient(to bottom, rgba(42,23,15,0.75) 0%, transparent 40%)",
                 padding: "10px",
-              }}>
-                
-              </div>
+              }} />
               <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0,
                 backgroundColor: "rgba(42,23,15,0.88)",
@@ -633,11 +700,11 @@ function UploadSlot({
   label: string; hint: string; accept: string;
   value: File | null; onChange: (f: File | null) => void; required?: boolean;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   return (
-    <div style={S.uploadSlot(!!value)} onClick={() => ref.current?.click()}>
+    <div style={S.uploadSlot(!!value)} onClick={() => inputRef.current?.click()}>
       <input
-        ref={ref} type="file" accept={accept}
+        ref={inputRef} type="file" accept={accept}
         style={{ display: "none" }}
         onChange={(e) => onChange(e.target.files?.[0] ?? null)}
       />
@@ -658,11 +725,50 @@ function UploadSlot({
   );
 }
 
-/* ─── MAIN PAGE ──────────────────────────────────────────────────────────── */
-export default function RegistrationPage() {
+/* ─── UPLOAD PROGRESS OVERLAY ────────────────────────────────────────────── */
+function UploadingOverlay({ progress }: { progress: string }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 99999,
+      backgroundColor: "rgba(26,15,10,0.85)",
+      backdropFilter: "blur(6px)",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      gap: "20px",
+    }}>
+      <div style={{
+        width: "48px", height: "48px",
+        border: "3px solid rgba(176,137,104,0.2)",
+        borderTopColor: "#b08968",
+        borderRadius: "50%",
+        animation: "spin 0.9s linear infinite",
+      }} />
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontFamily: "'Georgia', serif", fontSize: "1.1rem", color: "#f5f0eb", marginBottom: "8px" }}>
+          Uploading your files…
+        </p>
+        <p style={{ fontFamily: "sans-serif", fontSize: "13px", color: "#b08968" }}>
+          {progress}
+        </p>
+        <p style={{ fontFamily: "sans-serif", fontSize: "11px", color: "#6b5a50", marginTop: "6px" }}>
+          Please don't close this page
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── INNER PAGE ─────────────────────────────────────────────────────────── */
+function RegistrationInner() {
+  const searchParams = useSearchParams();
+  const refParam = searchParams.get("ref");
+
   const [step, setStep] = useState<Step>(1);
   const [data, setData] = useState<FormData>(empty);
   const [refNum] = useState(() => "EH" + Math.floor(100000 + Math.random() * 900000));
+  const [payRef, setPayRef] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
 
   const set = (k: keyof FormData, v: unknown) =>
     setData((d) => ({ ...d, [k]: v }));
@@ -671,6 +777,215 @@ export default function RegistrationPage() {
   const next = () => setStep((s) => Math.min(6, s + 1) as Step);
   const back = () => setStep((s) => Math.max(1, s - 1) as Step);
 
+  /* ── UPLOAD ALL FILES — returns public URLs ───────────────────────────── */
+  const uploadAllFiles = async (): Promise<{
+    portrait_name: string | null;
+    full_body_front_name: string | null;
+    full_body_side_name: string | null;
+    catwalk_video_name: string | null;
+    extra1_name: string | null;
+    extra2_name: string | null;
+  }> => {
+    const slots: Array<{ file: File | null; slot: string; key: string }> = [
+      { file: data.portrait,      slot: "portrait",        key: "portrait_name" },
+      { file: data.fullBodyFront, slot: "full_body_front",  key: "full_body_front_name" },
+      { file: data.fullBodySide,  slot: "full_body_side",   key: "full_body_side_name" },
+      { file: data.walkVideo,     slot: "catwalk_video",    key: "catwalk_video_name" },
+      { file: data.extra1,        slot: "extra1",           key: "extra1_name" },
+      { file: data.extra2,        slot: "extra2",           key: "extra2_name" },
+    ];
+
+    const filesWithContent = slots.filter(s => s.file);
+    const results: Record<string, string | null> = {};
+
+    for (let i = 0; i < slots.length; i++) {
+      const { file, slot, key } = slots[i];
+      if (!file) { results[key] = null; continue; }
+      setUploadProgress(
+        `Uploading ${slot.replace(/_/g, " ")} (${filesWithContent.findIndex(s => s.slot === slot) + 1} of ${filesWithContent.length})…`
+      );
+      // uploadFile now returns the public URL directly
+      const publicUrl = await uploadFile(file, refNum, slot);
+      results[key] = publicUrl;
+    }
+
+    return results as {
+      portrait_name: string | null;
+      full_body_front_name: string | null;
+      full_body_side_name: string | null;
+      catwalk_video_name: string | null;
+      extra1_name: string | null;
+      extra2_name: string | null;
+    };
+  };
+
+  /* ── PAYSTACK PAYMENT HANDLER ─────────────────────────────────────────── */
+  const payWithPaystack = () => {
+    if (!data.email) {
+      alert("Please enter your email before payment");
+      return;
+    }
+
+    const handler = (window as any).PaystackPop.setup({
+      key: "pk_test_5e8886b3dc10d7f7a23611a4e825225af8f987a9", // ← replace with live key before launch
+      email: data.email,
+      amount: 15000 * 100,
+      currency: "NGN",
+      ref: refNum,
+
+      callback: function (response: { reference: string }) {
+        (async () => {
+          try {
+            console.log("✅ Paystack payment success:", response);
+            setPayRef(response.reference);
+
+            // 1. Upload all files → get back public URLs
+            setUploading(true);
+            const filePaths = await uploadAllFiles();
+            setUploading(false);
+
+            // 2. Save registration record to DB with public URLs
+            const { error } = await supabase
+              .from("everythinghighregistrations")
+              .insert([{
+                full_name:             data.fullName,
+                email:                 data.email,
+                phone:                 data.phone,
+                state:                 data.state,
+                dob:                   data.dob,
+                gender:                data.gender,
+                nationality:           data.nationality,
+                instagram:             data.instagram,
+                height:                data.height,
+                shoulder:              data.shoulder,
+                bust:                  data.bust,
+                waist:                 data.waist,
+                hip:                   data.hip,
+                shoe:                  data.shoe,
+                hair_colour:           data.hairColour,
+                eye_colour:            data.eyeColour,
+                skin_tone:             data.skinTone,
+                experience:            data.experience,
+                category_interest:     data.categoryInterest,
+                // Public URLs stored directly — no path reconstruction needed in admin
+                portrait_name:         filePaths.portrait_name,
+                full_body_front_name:  filePaths.full_body_front_name,
+                full_body_side_name:   filePaths.full_body_side_name,
+                catwalk_video_name:    filePaths.catwalk_video_name,
+                promo_code:            data.promoCode || null,
+                referral_code:         refParam ?? null,
+                payment_method:        "paystack",
+                payment_reference:     response.reference,
+                internal_ref:          refNum,
+                amount:                15000,
+                status:                "paid",
+              }]);
+
+            if (error) {
+              console.error("❌ Supabase DB error:", error);
+              alert("Payment succeeded but we couldn't save your application. Please contact support with ref: " + response.reference);
+              return;
+            }
+
+            // 3. Send confirmation emails (non-blocking)
+            await sendRegistrationEmails({
+              applicantName:  data.fullName,
+              applicantEmail: data.email,
+              internalRef:    refNum,
+              paymentRef:     response.reference,
+              paymentMethod:  "Paystack",
+              state:          data.state,
+              phone:          data.phone,
+              category:       data.categoryInterest[0] ?? "—",
+              amount:         15000,
+            });
+
+            next(); // → step 6 success screen
+
+          } catch (err) {
+            setUploading(false);
+            console.error("❌ Unexpected error:", err);
+            alert("Something went wrong. Your payment was received — please contact support with ref: " + response.reference);
+          }
+        })();
+      },
+
+      onClose: function () {
+        console.log("Paystack modal closed");
+      },
+    });
+
+    handler.openIframe();
+  };
+
+  /* ── BANK TRANSFER SUBMIT ─────────────────────────────────────────────── */
+  const submitBankTransfer = async () => {
+    if (!data.termsAccepted) {
+      alert("Please confirm the terms checkbox.");
+      return;
+    }
+
+    setUploading(true);
+    const filePaths = await uploadAllFiles();
+    setUploading(false);
+
+    const { error } = await supabase
+      .from("everythinghighregistrations")
+      .insert([{
+        full_name:             data.fullName,
+        email:                 data.email,
+        phone:                 data.phone,
+        state:                 data.state,
+        dob:                   data.dob,
+        gender:                data.gender,
+        nationality:           data.nationality,
+        instagram:             data.instagram,
+        height:                data.height,
+        shoulder:              data.shoulder,
+        bust:                  data.bust,
+        waist:                 data.waist,
+        hip:                   data.hip,
+        shoe:                  data.shoe,
+        hair_colour:           data.hairColour,
+        eye_colour:            data.eyeColour,
+        skin_tone:             data.skinTone,
+        experience:            data.experience,
+        category_interest:     data.categoryInterest,
+        portrait_name:         filePaths.portrait_name,
+        full_body_front_name:  filePaths.full_body_front_name,
+        full_body_side_name:   filePaths.full_body_side_name,
+        catwalk_video_name:    filePaths.catwalk_video_name,
+        promo_code:            data.promoCode || null,
+        referral_code:         refParam ?? null,
+        payment_method:        "bank_transfer",
+        payment_reference:     null,
+        internal_ref:          refNum,
+        amount:                15000,
+        status:                "pending",
+      }]);
+
+    if (error) {
+      alert("Could not save your application. Please try again or contact support.");
+      return;
+    }
+
+    // Send confirmation emails
+    await sendRegistrationEmails({
+      applicantName:  data.fullName,
+      applicantEmail: data.email,
+      internalRef:    refNum,
+      paymentRef:     "Pending (Bank Transfer)",
+      paymentMethod:  "Bank Transfer",
+      state:          data.state,
+      phone:          data.phone,
+      category:       data.categoryInterest[0] ?? "—",
+      amount:         15000,
+    });
+
+    next();
+  };
+
+  /* ── PROGRESS SIDEBAR ─────────────────────────────────────────────────── */
   const ProgressSidebar = (
     <div style={S.progressCard}>
       <p style={S.progressLabel}>Application Progress</p>
@@ -808,7 +1123,16 @@ export default function RegistrationPage() {
           <label style={S.label}>Category Interest</label>
           <select style={S.select} value={data.categoryInterest[0] || ""} onChange={(e) => set("categoryInterest", [e.target.value])}>
             <option value="">Select category</option>
-            {["Runway","Editorial","Commercial","Fitness","Bridal","Plus Size","Kids","Hair & Beauty"].map(o => <option key={o}>{o}</option>)}
+            <option value="Runway / Catwalk">Runway / Catwalk</option>
+            <option value="Editorial">Editorial</option>
+            <option value="Commercial">Commercial</option>
+            <option value="Fitness">Fitness</option>
+            <option value="Bridal">Bridal</option>
+            <option value="Plus Size">Plus Size</option>
+            <option value="Kids (Ages 4–12)">Kids (Ages 4–12)</option>
+            <option value="Teens (Ages 13–17)">Teens (Ages 13–17)</option>
+            <option value="Hair & Beauty">Hair &amp; Beauty</option>
+            <option value="Glamour">Glamour</option>
           </select>
         </div>
       </div>
@@ -850,34 +1174,77 @@ export default function RegistrationPage() {
       <p style={{ fontSize: "13px", color: "#6b5a50", marginBottom: "20px", fontFamily: "sans-serif" }}>
         Please review your details before proceeding to payment.
       </p>
+
       <div style={S.reviewSection}>
         <p style={S.reviewHead}>Personal Info</p>
         <div className="rg-review-grid">
-          {[["Name", data.fullName || "—"], ["Email", data.email || "—"], ["Phone", data.phone || "—"], ["Date of Birth", data.dob || "—"], ["Gender", data.gender || "—"], ["State", data.state || "—"], ["Instagram", data.instagram || "—"]].map(([k, v]) => (
-            <><span key={"k"+k} style={S.reviewKey}>{k}</span><span key={"v"+k} style={S.reviewVal}>{v}</span></>
+          {([
+            ["Name", data.fullName || "—"],
+            ["Email", data.email || "—"],
+            ["Phone", data.phone || "—"],
+            ["Date of Birth", data.dob || "—"],
+            ["Gender", data.gender || "—"],
+            ["State", data.state || "—"],
+            ["Instagram", data.instagram || "—"],
+          ] as [string, string][]).map(([k, v]) => (
+            <div key={`personal-${k}`} style={{ display: "contents" }}>
+              <span style={S.reviewKey}>{k}</span>
+              <span style={S.reviewVal}>{v}</span>
+            </div>
           ))}
         </div>
       </div>
+
       <div style={S.reviewSection}>
         <p style={S.reviewHead}>Model Details</p>
         <div className="rg-review-grid">
-          {[["Height", data.height || "—"], ["Shoulder", data.shoulder || "—"], ["Bust", data.bust || "—"], ["Waist", data.waist || "—"], ["Hip", data.hip || "—"], ["Shoe", data.shoe || "—"], ["Experience", data.experience || "—"]].map(([k, v]) => (
-            <><span key={"k"+k} style={S.reviewKey}>{k}</span><span key={"v"+k} style={S.reviewVal}>{v}</span></>
+          {([
+            ["Height", data.height || "—"],
+            ["Shoulder", data.shoulder || "—"],
+            ["Bust", data.bust || "—"],
+            ["Waist", data.waist || "—"],
+            ["Hip", data.hip || "—"],
+            ["Shoe", data.shoe || "—"],
+            ["Category", data.categoryInterest[0] || "—"],
+            ["Experience", data.experience || "—"],
+          ] as [string, string][]).map(([k, v]) => (
+            <div key={`model-${k}`} style={{ display: "contents" }}>
+              <span style={S.reviewKey}>{k}</span>
+              <span style={S.reviewVal}>{v}</span>
+            </div>
           ))}
         </div>
       </div>
+
       <div style={S.reviewSection}>
         <p style={S.reviewHead}>Uploads</p>
         <div className="rg-review-grid">
-          {([["Portrait", data.portrait], ["Full Body (Front)", data.fullBodyFront], ["Full Body (Side)", data.fullBodySide], ["Catwalk Video", data.walkVideo]] as [string, File | null][]).map(([k, v]) => (
-            <><span key={"k"+k} style={S.reviewKey}>{k}</span><span key={"v"+k} style={{ ...S.reviewVal, color: v ? "#7a3d18" : "#c0392b" }}>{v ? "✓ " + v.name : "Not uploaded"}</span></>
+          {([
+            ["Portrait", data.portrait],
+            ["Full Body (Front)", data.fullBodyFront],
+            ["Full Body (Side)", data.fullBodySide],
+            ["Catwalk Video", data.walkVideo],
+          ] as [string, File | null][]).map(([k, v]) => (
+            <div key={`upload-${k}`} style={{ display: "contents" }}>
+              <span style={S.reviewKey}>{k}</span>
+              <span style={{ ...S.reviewVal, color: v ? "#7a3d18" : "#c0392b" }}>
+                {v ? "✓ " + v.name : "⚠ Not uploaded"}
+              </span>
+            </div>
           ))}
         </div>
       </div>
+
       <div style={{ ...S.field, marginBottom: "20px" }}>
         <label style={S.label}>Promo / Referral Code (optional)</label>
-        <input style={{ ...S.input, maxWidth: "260px" }} placeholder="Enter code" value={data.promoCode} onChange={(e) => set("promoCode", e.target.value)} />
+        <input
+          style={{ ...S.input, maxWidth: "260px" }}
+          placeholder="Enter code"
+          value={data.promoCode}
+          onChange={(e) => set("promoCode", e.target.value)}
+        />
       </div>
+
       <div style={S.checkRow}>
         <input type="checkbox" style={S.checkbox} id="terms" checked={data.termsAccepted} onChange={(e) => set("termsAccepted", e.target.checked)} />
         <label htmlFor="terms" style={S.checkLabel}>
@@ -914,7 +1281,7 @@ export default function RegistrationPage() {
       <p style={{ fontSize: "13px", fontWeight: 600, color: "#3d2210", marginBottom: "14px", fontFamily: "sans-serif" }}>Select Payment Method</p>
       {[
         { id: "paystack", name: "Paystack", sub: "Pay securely with card, bank transfer or USSD" },
-        { id: "transfer", name: "Direct Bank Transfer", sub: "Transfer to our GTBank account – attach proof of payment" },
+        { id: "transfer", name: "Direct Bank Transfer", sub: "Transfer to our Access Bank account – attach proof of payment" },
       ].map((m) => (
         <div key={m.id} style={S.payMethod(data.paymentMethod === m.id)} onClick={() => set("paymentMethod", m.id)}>
           <div style={S.payDot(data.paymentMethod === m.id)}>
@@ -930,9 +1297,9 @@ export default function RegistrationPage() {
         <div style={{ backgroundColor: "#faf8f6", border: "1px solid #e8ddd4", borderRadius: "10px", padding: "16px 20px", marginTop: "8px", fontFamily: "sans-serif" }}>
           <p style={{ fontSize: "12px", fontWeight: 600, color: "#3d2210", marginBottom: "8px" }}>Bank Transfer Details</p>
           <p style={{ fontSize: "12px", color: "#6b5a50", lineHeight: 2 }}>
-            Bank: <strong style={{ color: "#1a0f0a" }}>GTBank</strong><br />
-            Account Name: <strong style={{ color: "#1a0f0a" }}>Everything High Academy</strong><br />
-            Account No: <strong style={{ color: "#1a0f0a" }}>0123456789</strong>
+            Bank: <strong style={{ color: "#1a0f0a" }}>Access Bank</strong><br />
+            Account Name: <strong style={{ color: "#1a0f0a" }}>Blessing Odey</strong><br />
+            Account No: <strong style={{ color: "#1a0f0a" }}>1452437529</strong>
           </p>
           <p style={{ fontSize: "11px", color: "#b08968", marginTop: "8px" }}>Use your full name as transfer reference.</p>
         </div>
@@ -940,24 +1307,54 @@ export default function RegistrationPage() {
     </>
   );
 
-  /* ── STEP 6 ── */
+  /* ── STEP 6 — SUCCESS ─────────────────────────────────────────────────── */
   const Step6 = (
     <div style={S.completeWrap}>
-      <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} style={S.completeIcon}>✓</motion.div>
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 18 }}
+        style={S.completeIcon}
+      >
+        ✓
+      </motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <h2 style={S.completeTitle}>Application Submitted!</h2>
-        <p style={S.completeSub}>Thank you, {data.fullName || "Applicant"}. Your application has been received and is under review.</p>
-        <p style={S.completeSub}>You'll receive a confirmation email at <strong>{data.email}</strong> within 24–48 hours.</p>
-        <div style={S.refBox}>Reference: {refNum}</div>
-        <p style={{ fontSize: "13px", color: "#6b5a50", fontFamily: "sans-serif", marginBottom: "24px" }}>
-          What's next: Our team reviews each application for potential, readiness, and alignment. Selected applicants will be contacted within 5 business days.
+        <p style={S.completeSub}>
+          Thank you, {data.fullName || "Applicant"}. Your application has been received and is under review.
         </p>
-        <Link href="/" style={{ display: "inline-block", backgroundColor: "#3d2210", color: "#fff", borderRadius: "8px", padding: "12px 32px", fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase" as const, textDecoration: "none", fontFamily: "sans-serif" }}>
+        <p style={S.completeSub}>
+          You'll receive a confirmation email at <strong>{data.email}</strong> within 24–48 hours.
+        </p>
+        <div style={S.refBox}>Application Ref: {refNum}</div>
+        {payRef && (
+          <div style={{ ...S.refBox, marginLeft: "8px", backgroundColor: "#eef5ec", borderColor: "#a3c99a" }}>
+            Payment Ref: {payRef}
+          </div>
+        )}
+        {refParam && (
+          <p style={{ fontSize: "11px", color: "#b08968", fontFamily: "sans-serif", marginTop: "4px" }}>
+            Referred by: {refParam}
+          </p>
+        )}
+        <p style={{ fontSize: "13px", color: "#6b5a50", fontFamily: "sans-serif", marginBottom: "24px", marginTop: "16px" }}>
+          Our team reviews each application for potential, readiness, and alignment. Selected applicants will be contacted within 5 business days.
+        </p>
+        <Link href="/" style={{
+          display: "inline-block",
+          backgroundColor: "#3d2210", color: "#fff",
+          borderRadius: "8px", padding: "12px 32px",
+          fontSize: "12px", letterSpacing: "0.15em",
+          textTransform: "uppercase" as const,
+          textDecoration: "none", fontFamily: "sans-serif",
+        }}>
           Back to Home
         </Link>
         <p style={{ marginTop: "20px", fontSize: "13px", color: "#6b5a50", fontFamily: "sans-serif" }}>
           Share your journey →{" "}
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" style={{ color: "#7a3d18", textDecoration: "underline" }}>Tag us @everythinghigh</a>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" style={{ color: "#7a3d18", textDecoration: "underline" }}>
+            Tag us @everythinghigh
+          </a>
         </p>
       </motion.div>
     </div>
@@ -965,10 +1362,25 @@ export default function RegistrationPage() {
 
   const steps = [Step1, Step2, Step3, Step4, Step5, Step6];
 
-  return (
-    <main style={S.page}>
-      <SiteNavbar variant="light" />
+  const handleContinue = () => {
+    if (step === 5) {
+      if (!data.paymentMethod) {
+        alert("Please select a payment method.");
+        return;
+      }
+      if (data.paymentMethod === "paystack") {
+        payWithPaystack();
+      } else {
+        submitBankTransfer();
+      }
+    } else {
+      next();
+    }
+  };
 
+  return (
+    <>
+      {uploading && <UploadingOverlay progress={uploadProgress} />}
 
       <section style={S.hero}>
         <p style={S.heroLabel}>Application Form</p>
@@ -1000,16 +1412,38 @@ export default function RegistrationPage() {
               <button style={S.btnBack} onClick={back}>{step === 1 ? "" : "← Back"}</button>
               <button
                 style={S.btnContinue}
-                onClick={next}
+                onClick={handleContinue}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a3018")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3d2210")}
               >
-                {step === 5 ? "Submit & Pay" : "Continue →"}
+                {step === 5
+                  ? data.paymentMethod === "transfer"
+                    ? "Submit Application →"
+                    : "Submit & Pay →"
+                  : "Continue →"}
               </button>
             </div>
           )}
         </div>
       </div>
+    </>
+  );
+}
+
+/* ─── MAIN PAGE ──────────────────────────────────────────────────────────── */
+export default function RegistrationPage() {
+  return (
+    <main style={S.page}>
+      <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
+      <SiteNavbar variant="light" />
+
+      <Suspense fallback={
+        <div style={{ textAlign: "center", padding: "80px 20px", color: "#6b5a50", fontFamily: "sans-serif" }}>
+          Loading…
+        </div>
+      }>
+        <RegistrationInner />
+      </Suspense>
 
       <style>{`
         .rg-layout {
@@ -1086,6 +1520,7 @@ export default function RegistrationPage() {
         }
         input::placeholder { color: #b8a49a; }
         select option { background: #fff; color: #1a0f0a; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <SiteFooter />
