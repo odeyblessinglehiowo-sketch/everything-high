@@ -46,17 +46,17 @@ interface FormData {
 
 /* ─── SUPABASE ───────────────────────────────────────────────────────────── */
 const supabase = createClient(
-  "https://ypukgajdjfrtdwetqetg.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdWtnYWpkamZydGR3ZXRxZXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODgzNDYsImV4cCI6MjA5Mjc2NDM0Nn0.DepyLLBM3XyGwKY2Ouz22fIOCaLHKmTCjKFKGtoo1cA"
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 const BUCKET = "applicant-uploads";
 
 /**
- * Uploads a single File to Supabase Storage.
- * Path: {internalRef}/{slot}.{ext}
- * Returns the PUBLIC URL of the file so it can be stored directly in DB
- * and the admin dashboard can display it immediately without extra lookups.
+ * FIX: uploadFile now returns the public URL correctly.
+ * Make sure your Supabase Storage bucket "applicant-uploads" has:
+ *   - Public bucket enabled, OR
+ *   - RLS policy: allow anon INSERT and SELECT on storage.objects
  */
 async function uploadFile(
   file: File,
@@ -64,50 +64,32 @@ async function uploadFile(
   slot: string
 ): Promise<string | null> {
   const ext = file.name.split(".").pop() ?? "bin";
-  const path = `${internalRef}/${slot}.${ext}`;
+  const uniqueSuffix = Math.random().toString(36).slice(2, 8);
+  const path = `${internalRef}/${slot}-${uniqueSuffix}.${ext}`;
 
-  const { error } = await supabase.storage
+  console.log(`⬆️ Uploading [${slot}]: path=${path}, size=${file.size}, type=${file.type}`);
+
+  const { data, error } = await supabase.storage
     .from(BUCKET)
     .upload(path, file, {
       cacheControl: "3600",
-      upsert: true,
+      upsert: false,
       contentType: file.type,
     });
 
   if (error) {
-    console.error(`❌ Upload failed for ${slot}:`, error.message);
+    // FIX: Log the full error object so you can see the exact RLS/policy message
+    console.error(`❌ Upload failed for [${slot}]:`, error.message, JSON.stringify(error));
     return null;
   }
 
-  // Return the public URL directly — this is what gets saved to DB
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl ?? null;
-}
+  console.log(`✅ Upload success for [${slot}]:`, data);
 
-/* ─── RESEND EMAIL ───────────────────────────────────────────────────────── */
-// We call a Next.js API route that uses Resend on the server side.
-// Create /app/api/send-registration-emails/route.ts (see below).
-async function sendRegistrationEmails(payload: {
-  applicantName: string;
-  applicantEmail: string;
-  internalRef: string;
-  paymentRef: string;
-  paymentMethod: string;
-  state: string;
-  phone: string;
-  category: string;
-  amount: number;
-}) {
-  try {
-    await fetch("/api/send-registration-emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch (err) {
-    // Email failure is non-critical — application is already saved
-    console.error("Email sending failed (non-critical):", err);
-  }
+  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  const publicUrl = urlData?.publicUrl ?? null;
+
+  console.log(`🔗 Public URL for [${slot}]:`, publicUrl);
+  return publicUrl;
 }
 
 /* ─── HELPERS ────────────────────────────────────────────────────────────── */
@@ -706,7 +688,14 @@ function UploadSlot({
       <input
         ref={inputRef} type="file" accept={accept}
         style={{ display: "none" }}
-        onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          const file = e.target.files?.[0] ?? null;
+          if (file && file.size > 100 * 1024 * 1024) {
+            alert("File is too large. Please upload a file under 100MB.");
+            return;
+          }
+          onChange(file);
+        }}
       />
       {value ? (
         <>
@@ -751,7 +740,7 @@ function UploadingOverlay({ progress }: { progress: string }) {
           {progress}
         </p>
         <p style={{ fontFamily: "sans-serif", fontSize: "11px", color: "#6b5a50", marginTop: "6px" }}>
-          Please don't close this page
+          Please don&apos;t close this page
         </p>
       </div>
     </div>
@@ -777,22 +766,22 @@ function RegistrationInner() {
   const next = () => setStep((s) => Math.min(6, s + 1) as Step);
   const back = () => setStep((s) => Math.max(1, s - 1) as Step);
 
-  /* ── UPLOAD ALL FILES — returns public URLs ───────────────────────────── */
+  /* ── UPLOAD ALL FILES ─────────────────────────────────────────────────── */
   const uploadAllFiles = async (): Promise<{
-    portrait_name: string | null;
-    full_body_front_name: string | null;
-    full_body_side_name: string | null;
-    catwalk_video_name: string | null;
-    extra1_name: string | null;
-    extra2_name: string | null;
+    portrait_url: string | null;
+    full_body_front_url: string | null;
+    full_body_side_url: string | null;
+    catwalk_video_url: string | null;
+    extra1_url: string | null;
+    extra2_url: string | null;
   }> => {
     const slots: Array<{ file: File | null; slot: string; key: string }> = [
-      { file: data.portrait,      slot: "portrait",        key: "portrait_name" },
-      { file: data.fullBodyFront, slot: "full_body_front",  key: "full_body_front_name" },
-      { file: data.fullBodySide,  slot: "full_body_side",   key: "full_body_side_name" },
-      { file: data.walkVideo,     slot: "catwalk_video",    key: "catwalk_video_name" },
-      { file: data.extra1,        slot: "extra1",           key: "extra1_name" },
-      { file: data.extra2,        slot: "extra2",           key: "extra2_name" },
+      { file: data.portrait,      slot: "portrait",       key: "portrait_url" },
+      { file: data.fullBodyFront, slot: "full_body_front", key: "full_body_front_url" },
+      { file: data.fullBodySide,  slot: "full_body_side",  key: "full_body_side_url" },
+      { file: data.walkVideo,     slot: "catwalk_video",   key: "catwalk_video_url" },
+      { file: data.extra1,        slot: "extra1",          key: "extra1_url" },
+      { file: data.extra2,        slot: "extra2",          key: "extra2_url" },
     ];
 
     const filesWithContent = slots.filter(s => s.file);
@@ -801,117 +790,216 @@ function RegistrationInner() {
     for (let i = 0; i < slots.length; i++) {
       const { file, slot, key } = slots[i];
       if (!file) { results[key] = null; continue; }
-      setUploadProgress(
-        `Uploading ${slot.replace(/_/g, " ")} (${filesWithContent.findIndex(s => s.slot === slot) + 1} of ${filesWithContent.length})…`
-      );
-      // uploadFile now returns the public URL directly
+      const idx = filesWithContent.findIndex(s => s.slot === slot) + 1;
+      setUploadProgress(`Uploading ${slot.replace(/_/g, " ")} (${idx} of ${filesWithContent.length})…`);
       const publicUrl = await uploadFile(file, refNum, slot);
       results[key] = publicUrl;
     }
 
     return results as {
-      portrait_name: string | null;
-      full_body_front_name: string | null;
-      full_body_side_name: string | null;
-      catwalk_video_name: string | null;
-      extra1_name: string | null;
-      extra2_name: string | null;
+      portrait_url: string | null;
+      full_body_front_url: string | null;
+      full_body_side_url: string | null;
+      catwalk_video_url: string | null;
+      extra1_url: string | null;
+      extra2_url: string | null;
     };
+  };
+
+  /* ── SAVE PENDING RECORD ──────────────────────────────────────────────── */
+  const savePendingRecord = async (filePaths: {
+    portrait_url: string | null;
+    full_body_front_url: string | null;
+    full_body_side_url: string | null;
+    catwalk_video_url: string | null;
+    extra1_url: string | null;
+    extra2_url: string | null;
+  }) => {
+    const { error } = await supabase
+      .from("everythinghighregistrations")
+      .insert([{
+        full_name:            data.fullName,
+        email:                data.email,
+        phone:                data.phone,
+        state:                data.state,
+        dob:                  data.dob,
+        gender:               data.gender,
+        nationality:          data.nationality,
+        instagram:            data.instagram,
+        height:               data.height,
+        shoulder:             data.shoulder,
+        bust:                 data.bust,
+        waist:                data.waist,
+        hip:                  data.hip,
+        shoe:                 data.shoe,
+        hair_colour:          data.hairColour,
+        eye_colour:           data.eyeColour,
+        skin_tone:            data.skinTone,
+        experience:           data.experience,
+        category_interest:    data.categoryInterest,
+        portrait_url:         filePaths.portrait_url,
+        full_body_front_url:  filePaths.full_body_front_url,
+        full_body_side_url:   filePaths.full_body_side_url,
+        catwalk_video_url:    filePaths.catwalk_video_url,
+        extra1_url:           filePaths.extra1_url,
+        extra2_url:           filePaths.extra2_url,
+        promo_code:           data.promoCode || null,
+        referral_code:        refParam ?? null,
+        payment_method:       "pending",
+        payment_reference:    null,
+        internal_ref:         refNum,
+        amount:               15000,
+        status:               "pending",
+      }]);
+
+    if (error) {
+      console.error("❌ Failed to save pending record:", error.message, JSON.stringify(error));
+      throw new Error(error.message);
+    }
+  };
+
+  /* ── MARK AS PAID ─────────────────────────────────────────────────────── */
+  const markAsPaid = async (paystackRef: string) => {
+    const { error } = await supabase
+      .from("everythinghighregistrations")
+      .update({
+        status:            "paid",
+        payment_method:    "paystack",
+        payment_reference: paystackRef,
+      })
+      .eq("internal_ref", refNum);
+
+    if (error) {
+      console.error("❌ Failed to mark as paid:", error.message);
+      throw new Error(error.message);
+    }
   };
 
   /* ── PAYSTACK PAYMENT HANDLER ─────────────────────────────────────────── */
   const payWithPaystack = () => {
     if (!data.email) {
-      alert("Please enter your email before payment");
+      alert("Please enter your email before payment.");
       return;
     }
 
     const handler = (window as any).PaystackPop.setup({
-      key: "pk_test_5e8886b3dc10d7f7a23611a4e825225af8f987a9", // ← replace with live key before launch
+      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
       email: data.email,
       amount: 15000 * 100,
       currency: "NGN",
       ref: refNum,
 
+      // FIX: Restructured callback so the user ALWAYS reaches the success
+      // screen after payment, even if backend verification or saving fails.
+      // Each step is wrapped in its own try/catch so one failure doesn't
+      // block the entire flow. Payment receipt is the source of truth.
       callback: function (response: { reference: string }) {
         (async () => {
           try {
-            console.log("✅ Paystack payment success:", response);
+            console.log("✅ Paystack payment received:", response.reference);
             setPayRef(response.reference);
-
-            // 1. Upload all files → get back public URLs
             setUploading(true);
-            const filePaths = await uploadAllFiles();
-            setUploading(false);
 
-            // 2. Save registration record to DB with public URLs
-            const { error } = await supabase
-              .from("everythinghighregistrations")
-              .insert([{
-                full_name:             data.fullName,
-                email:                 data.email,
-                phone:                 data.phone,
-                state:                 data.state,
-                dob:                   data.dob,
-                gender:                data.gender,
-                nationality:           data.nationality,
-                instagram:             data.instagram,
-                height:                data.height,
-                shoulder:              data.shoulder,
-                bust:                  data.bust,
-                waist:                 data.waist,
-                hip:                   data.hip,
-                shoe:                  data.shoe,
-                hair_colour:           data.hairColour,
-                eye_colour:            data.eyeColour,
-                skin_tone:             data.skinTone,
-                experience:            data.experience,
-                category_interest:     data.categoryInterest,
-                // Public URLs stored directly — no path reconstruction needed in admin
-                portrait_name:         filePaths.portrait_name,
-                full_body_front_name:  filePaths.full_body_front_name,
-                full_body_side_name:   filePaths.full_body_side_name,
-                catwalk_video_name:    filePaths.catwalk_video_name,
-                promo_code:            data.promoCode || null,
-                referral_code:         refParam ?? null,
-                payment_method:        "paystack",
-                payment_reference:     response.reference,
-                internal_ref:          refNum,
-                amount:                15000,
-                status:                "paid",
-              }]);
+            // STEP 1 — Upload files
+            setUploadProgress("Uploading files…");
+            let filePaths = {
+              portrait_url: null as string | null,
+              full_body_front_url: null as string | null,
+              full_body_side_url: null as string | null,
+              catwalk_video_url: null as string | null,
+              extra1_url: null as string | null,
+              extra2_url: null as string | null,
+            };
 
-            if (error) {
-              console.error("❌ Supabase DB error:", error);
-              alert("Payment succeeded but we couldn't save your application. Please contact support with ref: " + response.reference);
-              return;
+            try {
+              filePaths = await uploadAllFiles();
+              console.log("📁 Upload results:", filePaths);
+            } catch (uploadErr) {
+              // FIX: Don't block the whole flow if uploads fail
+              // The record will still be saved with null URLs so data isn't lost
+              console.error("⚠️ Upload error (non-fatal):", uploadErr);
             }
 
-            // 3. Send confirmation emails (non-blocking)
-            await sendRegistrationEmails({
-              applicantName:  data.fullName,
-              applicantEmail: data.email,
-              internalRef:    refNum,
-              paymentRef:     response.reference,
-              paymentMethod:  "Paystack",
-              state:          data.state,
-              phone:          data.phone,
-              category:       data.categoryInterest[0] ?? "—",
-              amount:         15000,
-            });
+            // STEP 2 — Save record to DB (always attempt, even if uploads failed)
+            setUploadProgress("Saving application…");
+            try {
+              await savePendingRecord(filePaths);
+              console.log("✅ Pending record saved");
+            } catch (saveErr) {
+              // FIX: Log but don't re-throw. Payment was received — move forward.
+              console.error("⚠️ Save error (non-fatal):", saveErr);
+            }
 
-            next(); // → step 6 success screen
+            // STEP 3 — Verify payment via backend (non-blocking, best-effort)
+            setUploadProgress("Verifying payment…");
+            let verified = false;
+            try {
+              const verifyRes = await fetch("/api/verify-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  reference: response.reference,
+                  internalRef: refNum,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              verified = verifyRes.ok && verifyData.verified;
+              console.log("🔍 Verification result:", verified, verifyData);
+            } catch (verifyErr) {
+              // FIX: Verification failure is non-fatal. Admin can confirm manually.
+              console.error("⚠️ Verify error (non-fatal):", verifyErr);
+            }
+
+            // STEP 4 — Mark as paid if verified
+            if (verified) {
+              try {
+                await markAsPaid(response.reference);
+                console.log("✅ Marked as paid");
+              } catch (markErr) {
+                console.error("⚠️ Mark-paid error:", markErr);
+              }
+            } else {
+              console.warn("⚠️ Payment not verified via API — admin will confirm manually. Ref:", response.reference);
+            }
+
+            setUploading(false);
+
+            // STEP 5 — Send confirmation emails (fire-and-forget)
+            fetch("/api/send-registration-emails", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                applicantName:  data.fullName,
+                applicantEmail: data.email,
+                internalRef:    refNum,
+                paymentRef:     response.reference,
+                paymentMethod:  "Paystack",
+                state:          data.state,
+                phone:          data.phone,
+                category:       data.categoryInterest[0] ?? "—",
+                amount:         15000,
+              }),
+            }).catch(err => console.error("Email send failed (non-critical):", err));
+
+            // FIX: Always navigate to success screen — payment was confirmed
+            next();
 
           } catch (err) {
+            // Only reaches here for truly unexpected errors
             setUploading(false);
-            console.error("❌ Unexpected error:", err);
-            alert("Something went wrong. Your payment was received — please contact support with ref: " + response.reference);
+            console.error("❌ Unexpected post-payment error:", err);
+            alert(
+              "Your payment was received but something went wrong. " +
+              "Please contact support with ref: " + response.reference
+            );
+            // FIX: Still navigate to success so user isn't stuck
+            next();
           }
         })();
       },
 
       onClose: function () {
-        console.log("Paystack modal closed");
+        console.log("Paystack modal closed without completing payment.");
       },
     });
 
@@ -926,61 +1014,88 @@ function RegistrationInner() {
     }
 
     setUploading(true);
-    const filePaths = await uploadAllFiles();
-    setUploading(false);
+    setUploadProgress("Uploading files…");
+
+    let filePaths = {
+      portrait_url: null as string | null,
+      full_body_front_url: null as string | null,
+      full_body_side_url: null as string | null,
+      catwalk_video_url: null as string | null,
+      extra1_url: null as string | null,
+      extra2_url: null as string | null,
+    };
+
+    try {
+      filePaths = await uploadAllFiles();
+      console.log("📁 Bank transfer upload results:", filePaths);
+    } catch (uploadErr) {
+      console.error("⚠️ Upload error:", uploadErr);
+      // Continue — save what we have
+    }
+
+    setUploadProgress("Saving application…");
 
     const { error } = await supabase
       .from("everythinghighregistrations")
       .insert([{
-        full_name:             data.fullName,
-        email:                 data.email,
-        phone:                 data.phone,
-        state:                 data.state,
-        dob:                   data.dob,
-        gender:                data.gender,
-        nationality:           data.nationality,
-        instagram:             data.instagram,
-        height:                data.height,
-        shoulder:              data.shoulder,
-        bust:                  data.bust,
-        waist:                 data.waist,
-        hip:                   data.hip,
-        shoe:                  data.shoe,
-        hair_colour:           data.hairColour,
-        eye_colour:            data.eyeColour,
-        skin_tone:             data.skinTone,
-        experience:            data.experience,
-        category_interest:     data.categoryInterest,
-        portrait_name:         filePaths.portrait_name,
-        full_body_front_name:  filePaths.full_body_front_name,
-        full_body_side_name:   filePaths.full_body_side_name,
-        catwalk_video_name:    filePaths.catwalk_video_name,
-        promo_code:            data.promoCode || null,
-        referral_code:         refParam ?? null,
-        payment_method:        "bank_transfer",
-        payment_reference:     null,
-        internal_ref:          refNum,
-        amount:                15000,
-        status:                "pending",
+        full_name:            data.fullName,
+        email:                data.email,
+        phone:                data.phone,
+        state:                data.state,
+        dob:                  data.dob,
+        gender:               data.gender,
+        nationality:          data.nationality,
+        instagram:            data.instagram,
+        height:               data.height,
+        shoulder:             data.shoulder,
+        bust:                 data.bust,
+        waist:                data.waist,
+        hip:                  data.hip,
+        shoe:                 data.shoe,
+        hair_colour:          data.hairColour,
+        eye_colour:           data.eyeColour,
+        skin_tone:            data.skinTone,
+        experience:           data.experience,
+        category_interest:    data.categoryInterest,
+        portrait_url:         filePaths.portrait_url,
+        full_body_front_url:  filePaths.full_body_front_url,
+        full_body_side_url:   filePaths.full_body_side_url,
+        catwalk_video_url:    filePaths.catwalk_video_url,
+        extra1_url:           filePaths.extra1_url,
+        extra2_url:           filePaths.extra2_url,
+        promo_code:           data.promoCode || null,
+        referral_code:        refParam ?? null,
+        payment_method:       "bank_transfer",
+        payment_reference:    null,
+        internal_ref:         refNum,
+        amount:               15000,
+        status:               "pending",
       }]);
 
+    setUploading(false);
+
     if (error) {
+      console.error("❌ DB insert error:", error.message, JSON.stringify(error));
       alert("Could not save your application. Please try again or contact support.");
       return;
     }
 
-    // Send confirmation emails
-    await sendRegistrationEmails({
-      applicantName:  data.fullName,
-      applicantEmail: data.email,
-      internalRef:    refNum,
-      paymentRef:     "Pending (Bank Transfer)",
-      paymentMethod:  "Bank Transfer",
-      state:          data.state,
-      phone:          data.phone,
-      category:       data.categoryInterest[0] ?? "—",
-      amount:         15000,
-    });
+    // Send emails (fire-and-forget)
+    fetch("/api/send-registration-emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        applicantName:  data.fullName,
+        applicantEmail: data.email,
+        internalRef:    refNum,
+        paymentRef:     "Pending (Bank Transfer)",
+        paymentMethod:  "Bank Transfer",
+        state:          data.state,
+        phone:          data.phone,
+        category:       data.categoryInterest[0] ?? "—",
+        amount:         15000,
+      }),
+    }).catch(err => console.error("Email send failed (non-critical):", err));
 
     next();
   };
@@ -1156,7 +1271,7 @@ function RegistrationInner() {
       </div>
       <span style={{ ...S.sectionLabel, marginTop: "24px" }}>Catwalk Video *</span>
       <div style={{ marginBottom: "16px" }}>
-        <UploadSlot label="Catwalk / Walk Video" hint="25–30 seconds. Walk toward & away from camera. Max 50MB" accept="video/*" value={data.walkVideo} onChange={(f) => set("walkVideo", f)} required />
+        <UploadSlot label="Catwalk / Walk Video" hint="25–30 seconds. Walk toward & away from camera. Max 100MB" accept="video/*" value={data.walkVideo} onChange={(f) => set("walkVideo", f)} required />
       </div>
       <span style={{ ...S.sectionLabel, marginTop: "24px" }}>Additional Photos (Optional)</span>
       <div className="rg-grid2">
@@ -1324,7 +1439,7 @@ function RegistrationInner() {
           Thank you, {data.fullName || "Applicant"}. Your application has been received and is under review.
         </p>
         <p style={S.completeSub}>
-          You'll receive a confirmation email at <strong>{data.email}</strong> within 24–48 hours.
+          You&apos;ll receive a confirmation email at <strong>{data.email}</strong> within 24–48 hours.
         </p>
         <div style={S.refBox}>Application Ref: {refNum}</div>
         {payRef && (
@@ -1426,24 +1541,6 @@ function RegistrationInner() {
           )}
         </div>
       </div>
-    </>
-  );
-}
-
-/* ─── MAIN PAGE ──────────────────────────────────────────────────────────── */
-export default function RegistrationPage() {
-  return (
-    <main style={S.page}>
-      <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
-      <SiteNavbar variant="light" />
-
-      <Suspense fallback={
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#6b5a50", fontFamily: "sans-serif" }}>
-          Loading…
-        </div>
-      }>
-        <RegistrationInner />
-      </Suspense>
 
       <style>{`
         .rg-layout {
@@ -1522,6 +1619,24 @@ export default function RegistrationPage() {
         select option { background: #fff; color: #1a0f0a; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+    </>
+  );
+}
+
+/* ─── MAIN PAGE ──────────────────────────────────────────────────────────── */
+export default function RegistrationPage() {
+  return (
+    <main style={S.page}>
+      <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
+      <SiteNavbar variant="light" />
+
+      <Suspense fallback={
+        <div style={{ textAlign: "center", padding: "80px 20px", color: "#6b5a50", fontFamily: "sans-serif" }}>
+          Loading…
+        </div>
+      }>
+        <RegistrationInner />
+      </Suspense>
 
       <SiteFooter />
     </main>

@@ -201,7 +201,7 @@ useEffect(() => {
 
   {/* CONTENT */}
   <div className="relative mx-auto grid min-h-[calc(100vh-80px)] max-w-7xl items-center gap-10 px-6 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
-
+ 
     {/* LEFT */}
     <div className="mx-auto max-w-2xl space-y-6 text-center lg:mx-0 lg:text-left">
 
@@ -1130,7 +1130,7 @@ useEffect(() => {
                 Email
               </p>
               <p className="text-[13px] text-[#1a0f0a]">
-                Everythingthing03@gmail.com
+                Everythinghigh03@gmail.com
               </p>
             </div>
           </div>

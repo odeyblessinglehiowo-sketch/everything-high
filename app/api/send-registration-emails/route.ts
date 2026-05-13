@@ -1,20 +1,22 @@
-// app/api/send-registration-emails/route.ts
-//
-// Install Resend: npm install resend
-// Add to .env.local:
-//   RESEND_API_KEY=re_xxxxxxxxxxxxxxxx
-//   ADMIN_EMAIL=admin@everythinghigh.com   (or wherever you want admin alerts)
-//   FROM_EMAIL=noreply@yourdomain.com      (must be a verified Resend sender domain)
-
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+// ─── ALL CONFIG FROM ENV — no hardcoded values anywhere ───────────────────
+// These must be set in .env.local (and in your hosting provider's env settings
+// before going live). The build will throw if they are missing.
+const resend      = new Resend(process.env.RESEND_API_KEY!);
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL!;
+const FROM_EMAIL  = process.env.FROM_EMAIL!;
+const APP_URL     = process.env.APP_URL!;
+const BRAND_NAME  = "Everything High Modelling Academy";
 
-const ADMIN_EMAIL  = process.env.ADMIN_EMAIL  ?? "admin@everythinghigh.com";
-const FROM_EMAIL   = process.env.FROM_EMAIL   ?? "noreply@everythinghigh.com";
-const BRAND_NAME   = "Everything High Modelling Academy";
+// Fail fast at startup if required env vars are missing
+if (!process.env.RESEND_API_KEY) throw new Error("Missing env: RESEND_API_KEY");
+if (!process.env.ADMIN_EMAIL)    throw new Error("Missing env: ADMIN_EMAIL");
+if (!process.env.FROM_EMAIL)     throw new Error("Missing env: FROM_EMAIL");
+if (!process.env.APP_URL)        throw new Error("Missing env: APP_URL");
 
+// ─── TYPES ─────────────────────────────────────────────────────────────────
 interface EmailPayload {
   applicantName: string;
   applicantEmail: string;
@@ -27,6 +29,25 @@ interface EmailPayload {
   amount: number;
 }
 
+// ─── INPUT VALIDATION ──────────────────────────────────────────────────────
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validatePayload(p: Partial<EmailPayload>): p is EmailPayload {
+  return (
+    typeof p.applicantName  === "string" && p.applicantName.trim().length > 0 &&
+    typeof p.applicantEmail === "string" && isValidEmail(p.applicantEmail) &&
+    typeof p.internalRef    === "string" && p.internalRef.trim().length > 0 &&
+    typeof p.paymentRef     === "string" &&
+    typeof p.paymentMethod  === "string" &&
+    typeof p.state          === "string" &&
+    typeof p.phone          === "string" &&
+    typeof p.category       === "string" &&
+    typeof p.amount         === "number"
+  );
+}
+
 // ─── ADMIN EMAIL HTML ──────────────────────────────────────────────────────
 function adminEmailHtml(p: EmailPayload): string {
   return `
@@ -35,30 +56,24 @@ function adminEmailHtml(p: EmailPayload): string {
 <head><meta charset="utf-8"><title>New Application — ${BRAND_NAME}</title></head>
 <body style="margin:0;padding:0;background:#f5f0eb;font-family:Georgia,serif;">
   <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8ddd4;">
-    <!-- Header -->
     <div style="background:#1a0f0a;padding:28px 32px;display:flex;align-items:center;gap:12px;">
       <div style="width:36px;height:36px;background:#7a3d18;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;">EH</div>
       <span style="color:#f5f0eb;font-size:16px;letter-spacing:0.04em;">${BRAND_NAME}</span>
     </div>
-    <!-- Top accent -->
     <div style="height:3px;background:linear-gradient(to right,#7a3d18,#b08968);"></div>
-    <!-- Body -->
     <div style="padding:32px;">
       <p style="font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:#b08968;margin-bottom:12px;font-family:sans-serif;">New Application Received</p>
-      <h1 style="font-size:1.6rem;font-weight:400;color:#1a0f0a;margin-bottom:24px;">
-        ${p.applicantName}
-      </h1>
-
+      <h1 style="font-size:1.6rem;font-weight:400;color:#1a0f0a;margin-bottom:24px;">${p.applicantName}</h1>
       <table style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:13px;">
         ${[
-          ["Internal Ref",    p.internalRef],
-          ["Email",           p.applicantEmail],
-          ["Phone",           p.phone],
-          ["State",           p.state],
-          ["Category",        p.category],
-          ["Payment Method",  p.paymentMethod],
-          ["Payment Ref",     p.paymentRef],
-          ["Amount",          `₦${p.amount.toLocaleString()}`],
+          ["Internal Ref",   p.internalRef],
+          ["Email",          p.applicantEmail],
+          ["Phone",          p.phone],
+          ["State",          p.state],
+          ["Category",       p.category],
+          ["Payment Method", p.paymentMethod],
+          ["Payment Ref",    p.paymentRef],
+          ["Amount",         `₦${p.amount.toLocaleString()}`],
         ].map(([k, v]) => `
           <tr>
             <td style="padding:10px 0;color:#9a8880;border-bottom:1px solid #f0ebe6;width:40%;">${k}</td>
@@ -66,14 +81,12 @@ function adminEmailHtml(p: EmailPayload): string {
           </tr>
         `).join("")}
       </table>
-
       <div style="margin-top:24px;">
-        <a href="https://yourdomain.com/admin" style="display:inline-block;background:#3d2210;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-family:sans-serif;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;">
+        <a href="${APP_URL}/admin" style="display:inline-block;background:#3d2210;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-family:sans-serif;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;">
           View in Dashboard →
         </a>
       </div>
     </div>
-    <!-- Footer -->
     <div style="padding:20px 32px;background:#faf8f6;border-top:1px solid #e8ddd4;">
       <p style="font-size:11px;color:#b8a49a;font-family:sans-serif;margin:0;">${BRAND_NAME} · Admin Notification · ${new Date().getFullYear()}</p>
     </div>
@@ -92,16 +105,14 @@ function applicantEmailHtml(p: EmailPayload): string {
 <head><meta charset="utf-8"><title>Application Received — ${BRAND_NAME}</title></head>
 <body style="margin:0;padding:0;background:#f5f0eb;font-family:Georgia,serif;">
   <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8ddd4;">
-    <!-- Header -->
     <div style="background:#1a0f0a;padding:28px 32px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:0;">
+      <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:36px;height:36px;background:#7a3d18;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;">EH</div>
         <span style="color:#f5f0eb;font-size:16px;letter-spacing:0.04em;">${BRAND_NAME}</span>
       </div>
     </div>
     <div style="height:3px;background:linear-gradient(to right,#7a3d18,#b08968);"></div>
 
-    <!-- Hero -->
     <div style="padding:40px 32px 32px;text-align:center;background:#faf8f6;border-bottom:1px solid #e8ddd4;">
       <div style="width:56px;height:56px;border-radius:50%;background:#f5ece4;border:2px solid #7a3d18;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;">✓</div>
       <h1 style="font-size:1.6rem;font-weight:400;color:#1a0f0a;margin-bottom:8px;">Application Received!</h1>
@@ -110,16 +121,13 @@ function applicantEmailHtml(p: EmailPayload): string {
       </p>
     </div>
 
-    <!-- Body -->
     <div style="padding:32px;">
-      <!-- Ref box -->
       <div style="background:#f5ece4;border:1px solid #c5a98a;border-radius:10px;padding:16px 20px;margin-bottom:24px;text-align:center;">
         <p style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:#b08968;margin-bottom:4px;font-family:sans-serif;">Your Application Reference</p>
         <p style="font-size:1.3rem;color:#3d2210;font-weight:700;font-family:sans-serif;letter-spacing:0.08em;">${p.internalRef}</p>
         <p style="font-size:11px;color:#6b5a50;margin-top:4px;font-family:sans-serif;">Please keep this for your records</p>
       </div>
 
-      <!-- Application summary -->
       <p style="font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:#b08968;margin-bottom:14px;font-family:sans-serif;">Application Summary</p>
       <table style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:13px;margin-bottom:24px;">
         ${[
@@ -140,7 +148,6 @@ function applicantEmailHtml(p: EmailPayload): string {
       </table>
 
       ${isPaid ? "" : `
-      <!-- Bank transfer notice -->
       <div style="background:#fff8e6;border:1px solid #f5a623;border-radius:10px;padding:16px 20px;margin-bottom:24px;font-family:sans-serif;">
         <p style="font-size:12px;font-weight:600;color:#7a5c00;margin-bottom:8px;">⏳ Payment Pending</p>
         <p style="font-size:12px;color:#7a5c00;line-height:1.6;">
@@ -153,13 +160,12 @@ function applicantEmailHtml(p: EmailPayload): string {
       </div>
       `}
 
-      <!-- What's next -->
       <div style="background:#faf8f6;border-radius:10px;padding:20px;border:1px solid #e8ddd4;margin-bottom:24px;font-family:sans-serif;">
         <p style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#b08968;margin-bottom:12px;">What Happens Next</p>
         ${[
           ["Our team reviews your application", "We evaluate each candidate for potential, readiness, and category fit."],
-          ["You'll hear from us", "Selected applicants are contacted within 5 business days via email or phone."],
-          ["Onboarding", "Successful applicants will receive next steps and programme details."],
+          ["You'll hear from us",               "Selected applicants are contacted within 5 business days via email or phone."],
+          ["Onboarding",                         "Successful applicants will receive next steps and programme details."],
         ].map(([title, desc], i) => `
           <div style="display:flex;gap:12px;margin-bottom:${i < 2 ? "14px" : "0"};">
             <div style="width:24px;height:24px;border-radius:50%;background:#3d2210;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${i + 1}</div>
@@ -171,7 +177,6 @@ function applicantEmailHtml(p: EmailPayload): string {
         `).join("")}
       </div>
 
-      <!-- CTA -->
       <p style="font-size:13px;color:#6b5a50;font-family:sans-serif;text-align:center;margin-bottom:16px;">
         Follow us on Instagram for updates
       </p>
@@ -182,14 +187,9 @@ function applicantEmailHtml(p: EmailPayload): string {
       </div>
     </div>
 
-    <!-- Footer -->
     <div style="padding:20px 32px;background:#faf8f6;border-top:1px solid #e8ddd4;text-align:center;">
-      <p style="font-size:11px;color:#b8a49a;font-family:sans-serif;margin:0 0 4px;">
-        ${BRAND_NAME}
-      </p>
-      <p style="font-size:11px;color:#b8a49a;font-family:sans-serif;margin:0;">
-        If you didn't submit this application, please ignore this email.
-      </p>
+      <p style="font-size:11px;color:#b8a49a;font-family:sans-serif;margin:0 0 4px;">${BRAND_NAME}</p>
+      <p style="font-size:11px;color:#b8a49a;font-family:sans-serif;margin:0;">If you didn't submit this application, please ignore this email.</p>
     </div>
   </div>
 </body>
@@ -199,40 +199,39 @@ function applicantEmailHtml(p: EmailPayload): string {
 // ─── ROUTE HANDLER ─────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const payload: EmailPayload = await req.json();
+    const body = await req.json();
 
-    const { applicantName, applicantEmail, internalRef } = payload;
-
-    if (!applicantEmail || !internalRef) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    // Validate all required fields before doing anything
+    if (!validatePayload(body)) {
+      return NextResponse.json(
+        { error: "Invalid or missing fields in request payload" },
+        { status: 400 }
+      );
     }
 
-    // Send both emails in parallel
+    const payload: EmailPayload = body;
+
+    // Send both emails in parallel — failures are logged but never crash the route
     const [adminResult, applicantResult] = await Promise.allSettled([
       resend.emails.send({
         from:    FROM_EMAIL,
         to:      ADMIN_EMAIL,
-        subject: `New Application: ${applicantName} (${internalRef})`,
+        subject: `New Application: ${payload.applicantName} (${payload.internalRef})`,
         html:    adminEmailHtml(payload),
       }),
       resend.emails.send({
         from:    FROM_EMAIL,
-        to:      applicantEmail,
-        subject: `Application Received — ${internalRef} | ${BRAND_NAME}`,
+        to:      payload.applicantEmail,
+        subject: `Application Received — ${payload.internalRef} | ${BRAND_NAME}`,
         html:    applicantEmailHtml(payload),
       }),
     ]);
 
-    // Log any failures but don't throw — emails are non-critical
-    if (adminResult.status === "rejected") {
-      console.error("Admin email failed:", adminResult.reason);
-    }
-    if (applicantResult.status === "rejected") {
-      console.error("Applicant email failed:", applicantResult.reason);
-    }
+    if (adminResult.status     === "rejected") console.error("Admin email failed:",     adminResult.reason);
+    if (applicantResult.status === "rejected") console.error("Applicant email failed:", applicantResult.reason);
 
     return NextResponse.json({
-      success: true,
+      success:   true,
       admin:     adminResult.status,
       applicant: applicantResult.status,
     });
