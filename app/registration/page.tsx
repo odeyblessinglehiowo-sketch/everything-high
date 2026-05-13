@@ -1396,7 +1396,7 @@ function RegistrationInner() {
       <p style={{ fontSize: "13px", fontWeight: 600, color: "#3d2210", marginBottom: "14px", fontFamily: "sans-serif" }}>Select Payment Method</p>
       {[
         { id: "paystack", name: "Paystack", sub: "Pay securely with card, bank transfer or USSD" },
-        { id: "transfer", name: "Direct Bank Transfer", sub: "Transfer to our Access Bank account – attach proof of payment" },
+        
       ].map((m) => (
         <div key={m.id} style={S.payMethod(data.paymentMethod === m.id)} onClick={() => set("paymentMethod", m.id)}>
           <div style={S.payDot(data.paymentMethod === m.id)}>
@@ -1408,17 +1408,6 @@ function RegistrationInner() {
           </div>
         </div>
       ))}
-      {data.paymentMethod === "transfer" && (
-        <div style={{ backgroundColor: "#faf8f6", border: "1px solid #e8ddd4", borderRadius: "10px", padding: "16px 20px", marginTop: "8px", fontFamily: "sans-serif" }}>
-          <p style={{ fontSize: "12px", fontWeight: 600, color: "#3d2210", marginBottom: "8px" }}>Bank Transfer Details</p>
-          <p style={{ fontSize: "12px", color: "#6b5a50", lineHeight: 2 }}>
-            Bank: <strong style={{ color: "#1a0f0a" }}>Access Bank</strong><br />
-            Account Name: <strong style={{ color: "#1a0f0a" }}>Blessing Odey</strong><br />
-            Account No: <strong style={{ color: "#1a0f0a" }}>1452437529</strong>
-          </p>
-          <p style={{ fontSize: "11px", color: "#b08968", marginTop: "8px" }}>Use your full name as transfer reference.</p>
-        </div>
-      )}
     </>
   );
 
