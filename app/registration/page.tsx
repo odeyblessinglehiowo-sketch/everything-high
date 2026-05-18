@@ -1388,7 +1388,7 @@ function RegistrationInner() {
       }}>
         <div>
           <p style={{ fontSize: "11px", letterSpacing: "0.3em", textTransform: "uppercase" as const, color: "#b08968", marginBottom: "4px", fontFamily: "sans-serif" }}>Application Fee</p>
-          <p style={{ fontFamily: "'Georgia', serif", fontSize: "1.8rem", color: "#1a0f0a", fontWeight: 400, lineHeight: 1 }}>₦15,000</p>
+          <p style={{ fontFamily: "'Georgia', serif", fontSize: "1.8rem", color: "#1a0f0a", fontWeight: 400, lineHeight: 1 }}>₦10,000</p>
           <p style={{ fontSize: "11px", color: "#6b5a50", marginTop: "4px", fontFamily: "sans-serif" }}>Includes training kit & registration materials</p>
         </div>
         <div style={{ fontSize: "32px" }}>💳</div>
