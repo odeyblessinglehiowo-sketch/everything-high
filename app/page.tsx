@@ -656,7 +656,7 @@ useEffect(() => {
           text: "I walked in unsure of myself. Now I own every room I step into."
         },
         {
-          name: "Chioma",
+          name: "Abigail",
           role: "Pageant Queen",
           image: "/images/modelse6.jpg",
           text: "They didn’t just teach me how to walk — they changed how I carry myself."
@@ -668,7 +668,7 @@ useEffect(() => {
           text: "Everything High gave me presence. Not just confidence — presence."
         },
         {
-          name: "Ada",
+          name: "sharon",
           role: "Student Model",
           image: "/images/2.jpeg",
           text: "From posture to mindset, everything about me transformed."
