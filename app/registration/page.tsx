@@ -848,7 +848,7 @@ function RegistrationInner() {
         payment_method:       "pending",
         payment_reference:    null,
         internal_ref:         refNum,
-        amount:               15000,
+        amount:               10000,
         status:               "pending",
       }]);
 
@@ -885,7 +885,7 @@ function RegistrationInner() {
     const handler = (window as any).PaystackPop.setup({
       key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
       email: data.email,
-      amount: 15000 * 100,
+      amount: 10000 * 100,
       currency: "NGN",
       ref: refNum,
 
@@ -977,7 +977,7 @@ function RegistrationInner() {
                 state:          data.state,
                 phone:          data.phone,
                 category:       data.categoryInterest[0] ?? "—",
-                amount:         15000,
+                amount:         10000,
               }),
             }).catch(err => console.error("Email send failed (non-critical):", err));
 
@@ -1068,7 +1068,7 @@ function RegistrationInner() {
         payment_method:       "bank_transfer",
         payment_reference:    null,
         internal_ref:         refNum,
-        amount:               15000,
+        amount:               10000,
         status:               "pending",
       }]);
 
@@ -1093,7 +1093,7 @@ function RegistrationInner() {
         state:          data.state,
         phone:          data.phone,
         category:       data.categoryInterest[0] ?? "—",
-        amount:         15000,
+        amount:         10000,
       }),
     }).catch(err => console.error("Email send failed (non-critical):", err));
 
