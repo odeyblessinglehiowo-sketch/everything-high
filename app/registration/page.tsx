@@ -1414,14 +1414,18 @@ function RegistrationInner() {
   /* ── STEP 6 — SUCCESS ─────────────────────────────────────────────────── */
   const Step6 = (
     <div style={S.completeWrap}>
-      <motion.div
-        initial={{ scale: 0.7, opacity: 0 }}
-        animate={{ scale: 1, opacity: 5 }}
-        transition={{ type: "spring", stiffness: 200, damping: 18 }}
-        style={S.completeIcon}
-      >
-        ✓
-      </motion.div>
+     <motion.div
+  initial={{ scale: 0.7, opacity: 0 }}
+  animate={{ scale: 1, opacity: 1 }}
+  transition={{ type: "spring", stiffness: 200, damping: 18 }}
+  style={{
+    ...S.completeIcon,
+    color: "#3d2210",
+    fontWeight: "bold",
+  }}
+>
+  ✓
+</motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <h2 style={S.completeTitle}>Application Submitted!</h2>
         <p style={S.completeSub}>
