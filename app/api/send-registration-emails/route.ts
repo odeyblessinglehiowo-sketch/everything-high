@@ -150,13 +150,6 @@ function applicantEmailHtml(p: EmailPayload): string {
       ${isPaid ? "" : `
       <div style="background:#fff8e6;border:1px solid #f5a623;border-radius:10px;padding:16px 20px;margin-bottom:24px;font-family:sans-serif;">
         <p style="font-size:12px;font-weight:600;color:#7a5c00;margin-bottom:8px;">⏳ Payment Pending</p>
-        <p style="font-size:12px;color:#7a5c00;line-height:1.6;">
-          Your application has been saved. Please transfer <strong>₦15,000</strong> to:<br><br>
-          <strong>Bank:</strong> Access Bank<br>
-          <strong>Account Name:</strong> Blessing Odey<br>
-          <strong>Account No:</strong> 1452437529<br><br>
-          Use your full name as the transfer reference. Your application will be activated once payment is confirmed.
-        </p>
       </div>
       `}
 

@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     // 1. Paystack confirms the transaction as "success"
     // 2. Amount matches ₦15,000 (= 1,500,000 kobo)
     // 3. Reference matches what we sent (prevents reference substitution attacks)
-    const expectedAmountKobo = 15000 * 100;
+    const expectedAmountKobo = 10000 * 100;
 
     if (
       paystackData.status !== true     ||

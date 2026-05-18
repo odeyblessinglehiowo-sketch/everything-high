@@ -1416,7 +1416,7 @@ function RegistrationInner() {
     <div style={S.completeWrap}>
       <motion.div
         initial={{ scale: 0.7, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        animate={{ scale: 1, opacity: 5 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
         style={S.completeIcon}
       >
