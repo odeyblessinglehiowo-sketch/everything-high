@@ -249,8 +249,8 @@ export default function AboutPage() {
         Our Philosophy
       </p>
 
-      <h2 className="font-serif text-[2rem] leading-[1.1] tracking-[-0.02em] md:text-[2.6rem] lg:text-[3rem]">
-        We don’t just train models.
+      <h2 className="font-serif text-[1.6rem] leading-[1.1] tracking-[-0.02em] md:text-[2.6rem] lg:text-[3rem]">
+        We don’t just Train Models.
         <span className="block italic text-[#c89b75]">
           We build presence, identity, and power.
         </span>

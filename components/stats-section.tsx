@@ -150,7 +150,7 @@ export default function StatsSection() {
             At A Glance
           </p>
 
-          <h2 className="heading-font text-[1.9rem] leading-[1.15] md:text-[2.4rem] lg:text-[3.2rem] text-[#1a0f0a]">
+          <h2 className="heading-font text-[1.8rem] leading-[1.15] md:text-[2.4rem] lg:text-[3.2rem] text-[#1a0f0a]">
             Built for visibility,
             <span className="block italic text-[#b08968]">
               refinement and real growth.

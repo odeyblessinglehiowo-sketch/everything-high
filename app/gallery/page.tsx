@@ -127,11 +127,11 @@ export default function GalleryPage() {
   <div className="relative z-10 w-[260px] h-[420px] bg-black rounded-[1.5rem]">
 
     <video
-      src="/videos/Walk1.mp4"
+      src="/videos/Walk7.mp4"
       autoPlay
       muted
       loop
-      className="w-full h-full object-contain rounded-[1.5rem]"
+      className="w-full h-full object-cover rounded-[1.5rem]"
     />
   </div>
 
@@ -224,10 +224,10 @@ export default function GalleryPage() {
     <div className="col-span-1 md:col-span-1 lg:col-span-2 grid grid-cols-2 gap-3">
 
       {[
-        "/images/21.jpg",
-        "/images/12.jpeg",
-        "/images/17.jpg",
-        "/images/10.jpeg",
+        "/images/p10.jpeg",
+        "/images/p11.jpeg",
+        "/images/p12.jpeg",
+        "/images/p13.jpeg",
       ].map((src, i) => (
         <div
           key={i}
@@ -236,7 +236,7 @@ export default function GalleryPage() {
         >
           <img
             src={src}
-            className="w-full h-[140px] md:h-[230px] object-cover transition duration-500 group-hover:scale-105"
+            className="w-full h-[200px] md:h-[230px] object-cover transition duration-500 group-hover:scale-105"
           />
 
           <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition" />

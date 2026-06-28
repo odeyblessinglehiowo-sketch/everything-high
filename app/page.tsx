@@ -40,13 +40,20 @@ const faqs = [
 const galleryImages = [
   
   "/images/1.jpeg",
+  "/images/p9.jpeg",
   "/images/8.jpeg",
-  "/images/models4.jpg",
+  "/images/models60.jpg",
   "/images/26.jpeg",
+  "/images/p10.jpeg",
   "/images/12.jpeg",
   "/images/modelse6.jpg",
   "/images/modele5.jpg",
+  "/images/p3.jpeg",
   "/images/23.jpg",
+  "/images/p2.jpeg",
+  
+  
+  
 ];
 
 
@@ -71,7 +78,7 @@ export default function Home() {
   const galleryRef = useRef<HTMLDivElement | null>(null);
   const loopImages = [...galleryImages, ...galleryImages];
   
-  const [activeImage, setActiveImage] = useState(galleryImages[0]);
+  const [activeImage, setActiveImage] = useState(galleryImages[5]);
 
 
   /* =========================
@@ -200,7 +207,7 @@ useEffect(() => {
   </div>
 
   {/* CONTENT */}
-  <div className="relative mx-auto grid min-h-[calc(100vh-80px)] max-w-7xl items-center gap-10 px-6 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
+  <div className="relative mx-auto grid min-h-[calc(100vh-80px)] max-w-7xl items-center gap-10 px-6 py-5 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
  
     {/* LEFT */}
     <div className="mx-auto max-w-2xl space-y-6 text-center lg:mx-0 lg:text-left">
@@ -240,38 +247,41 @@ useEffect(() => {
     </div>
 
     {/* RIGHT IMAGE CARD */}
-    <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+<div className="relative mx-auto w-full max-w-xl lg:max-w-[560px]">
 
-      <div className="rounded-[1.2rem] border border-white/10 bg-[#1a0f0a]/80 p-3 shadow-xl backdrop-blur-sm">
+  <div className="rounded-[1.5rem] border border-white/10 bg-[#1a0f0a]/80 p-4 shadow-2xl backdrop-blur-sm">
 
-        <div className="relative overflow-hidden rounded-[1rem]">
-          <Image
-            src="/images/hero1-new.jpg"
-            alt="Everything High featured model"
-            width={900}
-            height={1100}
-            className="h-[340px] w-full object-cover md:h-[420px] lg:h-[460px]"
-            priority
-          />
-        </div>
+    {/* Image */}
+    <div className="relative flex justify-center items-end overflow-hidden rounded-[1.2rem] bg-gradient-to-b from-[#2b1812] via-[#1a0f0a] to-[#0d0806] px-6 pt-8">
 
-        <div className="space-y-3 px-1 pt-4 text-center lg:text-left">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-[#c89b75]">
-            Luxury. Poise. Expression.
-          </p>
+      <Image
+        src="/images/hero2-new.jpg"
+        alt="Everything High featured model"
+        width={900}
+        height={1400}
+        priority
+        className="w-full max-w-[420px] h-auto object-contain"
+      />
 
-          <h2 className="font-serif text-[1.6rem] leading-tight text-white md:text-[1.8rem]">
-            A premium platform for aspiring models.
-          </h2>
-
-          <p className="text-[0.85rem] leading-6 text-[#dfd2c8] md:text-sm">
-            We train models, pageant queens, and everyday dreamers to walk
-            tall, own every room, and turn the pavement into their
-            personal runway.
-          </p>
-        </div>
-      </div>
     </div>
+
+    {/* Content */}
+    <div className="space-y-3 px-1 pt-2 text-center lg:text-left"> <p className="text-[10px] uppercase tracking-[0.35em] text-[#c89b75]"> Luxury. Poise. Expression. </p>
+
+      <h2 className="font-serif text-[1.9rem] leading-tight text-white">
+        A premium platform for aspiring models.
+      </h2>
+
+      <p className="text-sm leading-7 text-[#dfd2c8]">
+        We train models, pageant queens, and everyday dreamers to walk tall, own every room, and turn the pavement into their personal runway.
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+        
   </div>
 </section>
 
@@ -291,7 +301,7 @@ useEffect(() => {
       <div className="relative overflow-hidden rounded-[0.6rem] bg-[#f8f5f2] shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition duration-500 hover:-translate-y-2">
         
         <Image
-          src="/images/models1.jpg"
+          src="/images/p6.jpeg"
           alt="About Everything High"
           width={900}
           height={1200}
@@ -310,8 +320,8 @@ useEffect(() => {
         About Everything High
       </p>
 
-      <h2 className="heading-font text-[1.9rem] leading-[1.1] tracking-[-0.02em] md:text-[2.4rem] lg:text-[3rem]">
-        More than a modelling academy.
+      <h2 className="heading-font text-[1.6rem] leading-[1.1] tracking-[-0.02em] md:text-[2.4rem] lg:text-[2.6rem]">
+        More than a Modelling Academy.
         <span className="block text-[#b08968] italic">
           A launchpad for bold self-expression.
         </span>
@@ -327,7 +337,7 @@ useEffect(() => {
       <div className="grid grid-cols-2 gap-3 md:gap-5">
         
         <div className="rounded-[0.9rem] border border-[#e6dbd2] bg-[#f8f5f2] px-4 py-4 md:px-5 md:py-6 transition duration-300 hover:border-[#c89b75]/40">
-          <p className="text-[9px] uppercase tracking-[0.3em] text-[#b08968]">
+          <p className="text-[12px] uppercase tracking-[0.3em] text-[#b08968]">
             Our Mission
           </p>
           <p className="mt-2 text-[0.8rem] leading-6 text-[#6b5a4f] md:text-[0.92rem] md:leading-7">
@@ -338,7 +348,7 @@ useEffect(() => {
         </div>
 
         <div className="rounded-[0.9rem] border border-[#e6dbd2] bg-[#f8f5f2] px-4 py-4 md:px-5 md:py-6 transition duration-300 hover:border-[#c89b75]/40">
-          <p className="text-[9px] uppercase tracking-[0.3em] text-[#b08968]">
+          <p className="text-[12px] uppercase tracking-[0.3em] text-[#b08968]">
             Our Vision
           </p>
           <p className="mt-2 text-[0.8rem] leading-6 text-[#6b5a4f] md:text-[0.92rem] md:leading-7">
@@ -394,12 +404,12 @@ useEffect(() => {
   <div className="relative mx-auto max-w-4xl px-6 text-center">
 
     {/* LABEL */}
-    <p className="text-[10px] uppercase tracking-[0.45em] text-[#c89b75]">
+    <p className="text-[12px] uppercase tracking-[0.45em] text-[#c89b75]">
       Beauty in Motion
     </p>
 
     {/* HEADING */}
-    <h2 className="heading-font mt-3 text-[2rem] leading-[1.1] md:text-[2.5rem]">
+    <h2 className="heading-font mt-2 text-[2rem] leading-[1.1] md:text-[2.5rem]">
       The walk. The presence.
       <span className="block italic text-[#c89b75]">
         The transformation.
@@ -650,25 +660,25 @@ useEffect(() => {
 
       {[
         {
-          name: "Amara",
+          name: "Juwon",
           role: "Model Trainee",
-          image: "/images/models8.jpg",
+          image: "/images/models9.jpg",
           text: "I walked in unsure of myself. Now I own every room I step into."
         },
         {
-          name: "Abigail",
+          name: "Hephzibah",
           role: "Pageant Queen",
           image: "/images/modelse6.jpg",
           text: "They didn’t just teach me how to walk — they changed how I carry myself."
         },
         {
-          name: "Michael",
+          name: "Adams (Chaos)",
           role: "Runway Model",
           image: "/images/26.jpeg",
           text: "Everything High gave me presence. Not just confidence — presence."
         },
         {
-          name: "sharon",
+          name: "Magdalia",
           role: "Student Model",
           image: "/images/2.jpeg",
           text: "From posture to mindset, everything about me transformed."
@@ -803,19 +813,19 @@ useEffect(() => {
   <div className="mx-auto max-w-7xl px-5 py-12 md:px-6 md:py-16 lg:px-10 lg:py-10">
 
     {/* HEADER */}
-    <div className="max-w-2xl space-y-5 text-center lg:text-left">
-      <p className="text-[10px] md:text-[11px] uppercase tracking-[0.45em] md:tracking-[0.5em] text-[#c89b75]">
-        Why Join
-      </p>
+    <div className="mx-auto max-w-2xl space-y-5 text-center">
+  <p className="text-[10px] md:text-[11px] uppercase tracking-[0.45em] md:tracking-[0.5em] text-[#c89b75]">
+    Why Join
+  </p>
 
-      <h2 className="heading-font text-[2rem] leading-[1.15] md:text-[2.5rem] lg:text-[3.2rem]">
-        A premium modelling
-        <span className="block italic text-[#c89b75]">
-          experience built for
-        </span>
-        serious growth.
-      </h2>
-    </div>
+  <h2 className="heading-font text-[2rem] leading-[1.15] md:text-[2.5rem] lg:text-[3.2rem]">
+    A premium modelling
+    <span className="block italic text-[#c89b75]">
+      experience built for
+    </span>
+    serious growth.
+  </h2>
+</div>
 
     {/* CARDS */}
     <div className="mt-10 md:mt-14 grid grid-cols-2 gap-4 md:gap-6 xl:grid-cols-4">
@@ -918,7 +928,7 @@ useEffect(() => {
                 alt={`Gallery ${index}`}
                 width={500}
                 height={600}
-                className="h-[140px] md:h-[200px] lg:h-[250px] w-full object-cover transition duration-500 group-hover:scale-[1.05]"
+                className="h-[200px] md:h-[200px] lg:h-[250px] w-full object-cover transition duration-500 group-hover:scale-[1.05]"
               />
 
               <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition duration-300" />
@@ -928,7 +938,7 @@ useEffect(() => {
     </div>
 
     {/* BUTTON */}
-    <div className="mt-10 md:mt-14 flex justify-center">
+    <div className="mt-7 md:mt-14 flex justify-center">
       <a
         href="/gallery"
         className="inline-flex items-center justify-center rounded-full bg-[#4b2e1f] px-7 md:px-8 py-3 text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.22em] md:tracking-[0.25em] text-white transition duration-300 hover:bg-[#c89b75] hover:text-[#120a06]"
@@ -976,7 +986,7 @@ useEffect(() => {
     </p>
 
     {/* HEADING */}
-    <h2 className="heading-font mt-3 md:mt-4 text-[2rem] leading-[1.15] md:text-[2.6rem] lg:text-[3.2rem]">
+    <h2 className="heading-font mt-3 md:mt-4 text-[2rem] leading-[1.15] md:text-[2.6rem] lg:text-[2.6rem]">
       Step into a space where confidence is trained,
       <span className="block italic text-[#c89b75]">
         refined, and seen.
@@ -984,11 +994,11 @@ useEffect(() => {
     </h2>
 
     {/* TEXT */}
-    <p className="mx-auto mt-4 md:mt-6 max-w-xl text-[13px] md:text-sm leading-6 md:leading-7 text-[#f2e6dd]">
+    <p className="mx-auto mt-2 md:mt-6 max-w-xl text-[12px] md:text-sm leading-6 md:leading-7 text-[#f2e6dd]">
       Start your application today and take your first step toward an elevated modelling experience with Everything High.
     </p>
 
-    <p className="mt-2 md:mt-3 text-[13px] md:text-sm text-[#e7d9cf]">
+    <p className="mt-2 md:mt-2 text-[12px] md:text-sm text-[#e7d9cf]">
       Applications are now open for aspiring models ready to grow with confidence.
     </p>
 
