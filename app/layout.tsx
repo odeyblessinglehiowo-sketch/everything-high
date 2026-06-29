@@ -67,7 +67,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: "/images/og-image.jpg",
+        url: "/images/og1-image.jpg",
         width: 1200,
         height: 630,
         alt: "Everything High Modelling Academy",
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
     description:
       "Train. Walk. Shine. Join Nigeria's premium modelling academy.",
 
-    images: ["/images/og-image.jpg"],
+    images: ["/images/og1-image.jpg"],
   },
 
   robots: {
